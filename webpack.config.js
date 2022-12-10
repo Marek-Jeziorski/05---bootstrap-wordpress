@@ -28,7 +28,20 @@ class MyRunAfterCompile {
   }
 }
 
-//------------------------ MODULE RULES -------------------------
+//------------------------ PAGES TEMPLATES HANDLER --------------
+let pages = fse
+  .readdirSync("src")
+  .filter(function (file) {
+    return file.endsWith(".html");
+  })
+  .map(function (page) {
+    return new HtmlWebpackPlugin({
+      filename: page,
+      template: `src/${page}`,
+    });
+  });
+
+//------------------------ MODULE.RULES[] -------------------------
 let cssConfig = {
   test: /\.css$/i,
   use: [
@@ -68,25 +81,11 @@ let imagesConfig = {
   type: "asset/resource",
 };
 
-//------------------------ PAGES TEMPLATES HANDLER --------------
-let pages = fse
-  .readdirSync("src")
-  .filter(function (file) {
-    return file.endsWith(".html");
-  })
-  .map(function (page) {
-    return new HtmlWebpackPlugin({
-      filename: page,
-      template: `src/${page}`,
-    });
-  });
-
 //------------------------ MAIN MODULE.EXPORTS{} ----------------
 let config = {
   entry: path.resolve(__dirname, "src/assets/scripts/App.js"),
 
-  devtool: "inline-source-map",
-
+  devtool: false,
   module: {
     rules: [cssConfig, scssConfig, imagesConfig],
   },
@@ -98,6 +97,8 @@ let config = {
 
 if (currentTask == "dev") {
   config.mode = "development";
+  config.devtool = "inline-source-map";
+
   cssConfig.use.unshift("style-loader");
 
   config.output = {
@@ -119,6 +120,7 @@ if (currentTask == "dev") {
 if (currentTask == "build") {
   config.mode = "production";
 
+  // babel rules for all .js files
   config.module.rules.push({
     test: /\.js$/,
     exclude: /(node_modules)/,
@@ -131,6 +133,7 @@ if (currentTask == "build") {
   });
 
   cssConfig.use.unshift(MiniCssExtractPlugin.loader);
+  scssConfig.use[0].loader = MiniCssExtractPlugin.loader;
 
   config.output = {
     path: path.resolve(__dirname, "docs"),
